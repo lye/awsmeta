@@ -2,22 +2,28 @@ package awsmeta
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 )
 
 const AwsMetaIP = "169.254.169.254"
 
-func buildUrl(key string) string {
-	if key[0] != '/' {
-		key = "/" + key
+func buildUrl(version, key string) string {
+	if key[0] == '/' {
+		key = key[1:]
 	}
 
-	return "http://" + AwsMetaIP + "/latest" + key
+	return fmt.Sprintf("http://%s/%s/%s", AwsMetaIP, version, key)
 }
 
-func getData(key string) ([]byte, error) {
-	url := buildUrl(key)
+// retrieve a metadata key for a specific version of the instance metadata api.
+// if version is empty, the "latest" version is used.
+func GetVersion(version, key string) ([]byte, error) {
+	if version == "" {
+		version = "latest"
+	}
+	url := buildUrl(version, key)
 
 	res, er := http.Get(url)
 	if er != nil {
@@ -28,42 +34,48 @@ func getData(key string) ([]byte, error) {
 	return ioutil.ReadAll(res.Body)
 }
 
-func getDataAsString(key string) (string, error) {
-	bytes, er := getData(key)
+// see GetVersion().
+func GetVersionString(version, key string) (string, error) {
+	bytes, er := GetVersion(version, key)
+	return string(bytes), er
+}
 
-	if er != nil {
-		return "", er
-	}
+// equivalent to GetVersion("latest", key)
+func Get(key string) ([]byte, error) {
+	return GetVersion("latest", key)
+}
 
-	return string(bytes), nil
+// see Get().
+func GetString(key string) (string, error) {
+	return GetVersionString("latest", key)
 }
 
 func AmiId() (string, error) {
-	return getDataAsString("meta-data/ami-id")
+	return GetString("meta-data/ami-id")
 }
 
 func PublicIPv4() (string, error) {
-	return getDataAsString("meta-data/public-ipv4")
+	return GetString("meta-data/public-ipv4")
 }
 
 func LocalIPv4() (string, error) {
-	return getDataAsString("meta-data/local-ipv4")
+	return GetString("meta-data/local-ipv4")
 }
 
 func LocalHostname() (string, error) {
-	return getDataAsString("meta-data/local-hostname")
+	return GetString("meta-data/local-hostname")
 }
 
 func InstanceId() (string, error) {
-	return getDataAsString("meta-data/instance-id")
+	return GetString("meta-data/instance-id")
 }
 
 func InstanceType() (string, error) {
-	return getDataAsString("meta-data/instance-type")
+	return GetString("meta-data/instance-type")
 }
 
 func UserData() ([]byte, error) {
-	return getData("user-data")
+	return Get("user-data")
 }
 
 func UserDataJson(out interface{}) error {
