@@ -1,9 +1,9 @@
 package awsmeta
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
-	"encoding/json"
 )
 
 const AwsMetaIP = "169.254.169.254"
@@ -13,7 +13,7 @@ func buildUrl(key string) string {
 		key = "/" + key
 	}
 
-	return "http://" + AwsMetaIP + "/latest" + key 
+	return "http://" + AwsMetaIP + "/latest" + key
 }
 
 func getData(key string) ([]byte, error) {
